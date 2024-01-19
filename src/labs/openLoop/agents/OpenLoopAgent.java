@@ -7,6 +7,7 @@ import edu.cwru.sepia.agent.Agent;                                          // b
 import edu.cwru.sepia.environment.model.history.History.HistoryView;        // history of the game so far
 import edu.cwru.sepia.environment.model.state.ResourceNode;                 // tree or gold
 import edu.cwru.sepia.environment.model.state.ResourceNode.ResourceView;    // the "state" of that resource
+import edu.cwru.sepia.environment.model.state.ResourceNode.Type;
 import edu.cwru.sepia.environment.model.state.ResourceType;                 // what kind of resource units are carrying
 import edu.cwru.sepia.environment.model.state.State.StateView;              // current state of the game
 import edu.cwru.sepia.environment.model.state.Unit.UnitView;                // current state of a unit
@@ -15,9 +16,11 @@ import edu.cwru.sepia.util.Direction;                                       // d
 
 import java.io.InputStream;
 import java.io.OutputStream;
-
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -147,7 +150,13 @@ public class OpenLoopAgent
 
         // TODO: discover the id of the gold resource! Check out the documentation for StateView:
         // http://engr.case.edu/ray_soumya/Sepia/html/javadoc/edu/cwru/sepia/environment/model/state/State-StateView.html
-        Integer goldResourceNodeId = null;
+        List<Integer> goldResourceIds = state.getResourceNodeIds(Type.GOLD_MINE);
+        if(goldResourceIds.size() != 1)
+        {
+            System.err.println("[ERROR] OpenLoopAgent.initialStep: There should only be one gold mine");
+			System.exit(-1);
+        }
+        Integer goldResourceNodeId = goldResourceIds.get(0);
 
         // set our fields
         this.setMyUnitId(myUnitIds.iterator().next());
@@ -171,11 +180,61 @@ public class OpenLoopAgent
                                            HistoryView history)
     {
         Map<Integer, Action> actions = new HashMap<Integer, Action>();
+        UnitView enemyView = state.getUnit(enemyUnitId);
+        UnitView footmanView = state.getUnit(myUnitId);
+        ResourceView goldView = state.getResourceNode(goldResourceNodeId);
 
-        // TODO: your code to give your unit actions for this turn goes here!
+        if (goldView != null)
+        {
+            GetGold(actions, state, footmanView, goldView);
+        }
+        else 
+        {
+            KillEnemy(actions, state, footmanView, enemyView);
+        }
 
         return actions;
 	}
+
+    private void KillEnemy(Map<Integer, Action> actions, StateView state, UnitView footmanView, UnitView enemyView)
+    {
+        if (footmanView.getXPosition() > enemyView.getXPosition()-1){
+            actions.put(myUnitId, Action.createPrimitiveMove(myUnitId, Direction.WEST));
+        }
+        else if (footmanView.getXPosition() < enemyView.getXPosition()-1){
+            actions.put(myUnitId, Action.createPrimitiveMove(myUnitId, Direction.EAST));
+        }
+        else if (footmanView.getYPosition() > enemyView.getYPosition()){
+            actions.put(myUnitId, Action.createPrimitiveMove(myUnitId, Direction.NORTH));
+        }
+        else if (footmanView.getYPosition() < enemyView.getYPosition()){
+            actions.put(myUnitId, Action.createPrimitiveMove(myUnitId, Direction.SOUTH));
+        }
+        else if (enemyView != null)
+        {
+            actions.put(myUnitId, Action.createPrimitiveAttack(myUnitId, enemyUnitId));
+        }
+    }
+
+    private void GetGold(Map<Integer, Action> actions, StateView state, UnitView footmanView, ResourceView goldView)
+    {
+        if (footmanView.getXPosition() > goldView.getXPosition()-1){
+            actions.put(myUnitId, Action.createPrimitiveMove(myUnitId, Direction.WEST));
+        }
+        else if (footmanView.getXPosition() < goldView.getXPosition()-1){
+            actions.put(myUnitId, Action.createPrimitiveMove(myUnitId, Direction.EAST));
+        }
+        else if (footmanView.getYPosition() > goldView.getYPosition()){
+            actions.put(myUnitId, Action.createPrimitiveMove(myUnitId, Direction.NORTH));
+        }
+        else if (footmanView.getYPosition() < goldView.getYPosition()){
+            actions.put(myUnitId, Action.createPrimitiveMove(myUnitId, Direction.SOUTH));
+        }
+        else if (goldView != null)
+        {
+            actions.put(myUnitId, Action.createPrimitiveGather(myUnitId, Direction.EAST));
+        }
+    }
 
     /**
      * Finally, when the game ends, Sepia will call this method automatically for you. This method is traditionally
