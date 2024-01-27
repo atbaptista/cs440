@@ -8,10 +8,12 @@ import edu.bu.labs.stealth.graph.Path;
 
 import edu.cwru.sepia.environment.model.state.State.StateView;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;       // will need for bfs
 import java.util.Queue;         // will need for bfs
 import java.util.LinkedList;    // will need for bfs
+import java.util.List;
 import java.util.Set;           // will need for bfs
 
 
@@ -48,17 +50,8 @@ public class BFSMazeAgent
                 break;
             }
 
-            for (Vertex neighbor : getAdjacent(current)) {
+            for (Vertex neighbor : getAdjacent(current, goal, state)) {
                 if (visited.contains(neighbor))
-                    continue;
-                if (state.isUnitAt(neighbor.getXCoordinate(), neighbor.getYCoordinate()))
-                {
-                    if (!(neighbor.getXCoordinate() == goal.getXCoordinate() && neighbor.getYCoordinate() == goal.getYCoordinate()))
-                        continue;
-                }
-                if (!state.inBounds(neighbor.getXCoordinate(), neighbor.getYCoordinate()))
-                    continue;
-                if (state.isResourceAt(neighbor.getXCoordinate(), neighbor.getYCoordinate()))
                     continue;
 
                 previous.put(neighbor, current);
@@ -77,15 +70,32 @@ public class BFSMazeAgent
         return p.getParentPath();
     }
 
-    private Vertex[] getAdjacent(Vertex v)
+    private boolean isValidVertex(Vertex v, Vertex goal, StateView state) 
     {
-        Vertex[] adjacent = {
-            new Vertex(v.getXCoordinate()+1, v.getYCoordinate()), 
-            new Vertex(v.getXCoordinate()-1, v.getYCoordinate()),
-            new Vertex(v.getXCoordinate(), v.getYCoordinate()+1),
-            new Vertex(v.getXCoordinate(), v.getYCoordinate()-1)
-        };
-        return adjacent;
+        int x = v.getXCoordinate();
+        int y = v.getYCoordinate();
+
+        if (!state.inBounds(x, y)) 
+            return false;
+        if (state.isResourceAt(x, y)) 
+            return false;
+        if (state.isUnitAt(x, y) && !(x == goal.getXCoordinate() && y == goal.getYCoordinate()))
+            return false;
+
+        return true;
+    }
+
+    private Vertex[] getAdjacent(Vertex v, Vertex goal, StateView state) 
+    {
+        List<Vertex> adjacent = new ArrayList<>();
+        int[][] deltas = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, -1}, {-1, 1}};
+        for (int[] delta : deltas) 
+        {
+            Vertex neighbor = new Vertex(v.getXCoordinate() + delta[0], v.getYCoordinate() + delta[1]);
+            if (isValidVertex(neighbor, goal, state)) 
+                adjacent.add(neighbor);
+        }
+        return adjacent.toArray(new Vertex[0]);
     }
 
     @Override
