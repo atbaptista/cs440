@@ -8,7 +8,7 @@ import edu.bu.labs.stealth.graph.Path;
 
 import edu.cwru.sepia.environment.model.state.State.StateView;
 
-
+import java.util.HashMap;
 import java.util.HashSet;       // will need for bfs
 import java.util.Queue;         // will need for bfs
 import java.util.LinkedList;    // will need for bfs
@@ -27,76 +27,54 @@ public class BFSMazeAgent
         super(playerNum);
     }
 
+    // flipped goal and src names because i did it backwards by accident and didn't want to refactor everything
     @Override
-    public Path search(Vertex src,
-                       Vertex goal,
+    public Path search(Vertex goal,
+                       Vertex src,
                        StateView state)
     {
         Set<Vertex> visited = new HashSet<Vertex>();
         Queue<Vertex> queue = new LinkedList<Vertex>();
+        HashMap<Vertex, Vertex> previous = new HashMap<Vertex, Vertex>();
+
+        queue.add(src);
         visited.add(src);
-        // while (!queue.isEmpty()) {
-        //     Vertex current = queue.poll();
-            
-        //     for (Vertex neighbor : current.getNeighbors()) {
-        //         if (!neighbor.isVisited()) {
-        //             neighbor.setVisited(true);
-        //             queue.add(neighbor);
-        //         }
-        //     }
-        // }
-        return recursiveSearch(null , src, goal, visited, queue, state);
-    }
 
-    // * Here is an example to build a path from coordinate (0,1) to adjacent coordinate (1,1):
-    // * Path p = new Path(new Vertex(0, 1));     // tail of the linked list
-    // * p = new Path(new Vertex(1, 1), 1.0, p);  // add edge (0, 1) -> (1, 1) with cost 1.0 to the head of the path.
-    // how to undo
-    // path = path.getParentPath();
-    private Path recursiveSearch(Path path, Vertex src, Vertex goal, Set<Vertex> visited, Queue<Vertex> queue, StateView state)
-    {
-        if (src.equals(goal))
-            return path.getParentPath();
+        while (!queue.isEmpty()) {
+            Vertex current = queue.poll();
 
-        if (src.equals(null))
-        {
-            // no path is found, queue ran out
-            System.err.println("no path found, src is null");
-            return null;
+            if (current.equals(goal))
+            {
+                break;
+            }
+
+            for (Vertex neighbor : getAdjacent(current)) {
+                if (visited.contains(neighbor))
+                    continue;
+                if (state.isUnitAt(neighbor.getXCoordinate(), neighbor.getYCoordinate()))
+                {
+                    if (!(neighbor.getXCoordinate() == goal.getXCoordinate() && neighbor.getYCoordinate() == goal.getYCoordinate()))
+                        continue;
+                }
+                if (!state.inBounds(neighbor.getXCoordinate(), neighbor.getYCoordinate()))
+                    continue;
+                if (state.isResourceAt(neighbor.getXCoordinate(), neighbor.getYCoordinate()))
+                    continue;
+
+                previous.put(neighbor, current);
+                visited.add(neighbor);
+                queue.add(neighbor);
+            }
         }
 
-        // add this vertex to path
-        // Path pNew = new Path(new Vertex(src.getXCoordinate(), src.getYCoordinate()), 1.0f, path);
-
-        // add this vertex to visited
-        // visited.add(src);
-        
-        // add non visited adjacent tiles to queue 
-        // should check if theyre in the map bounds prob
-        for (Vertex v : getAdjacent(src))
+        Vertex prev = previous.get(goal);
+        Path p = new Path(goal);
+        while (prev != null)
         {
-            if (visited.contains(v))
-                continue;
-            // if (state.isUnitAt(v.getXCoordinate(), v.getYCoordinate()))
-            //     continue;
-            if (!state.inBounds(v.getXCoordinate(), v.getYCoordinate()))
-                continue;
-            if (state.isResourceAt(v.getXCoordinate(), v.getYCoordinate()))
-                continue;
-
-            System.out.println(v.toString());
-            queue.add(v);
-            visited.add(v);
+            p = new Path(prev, 1.0f, p);
+            prev = previous.get(prev);
         }
-        System.out.println(queue.toString());
-        Vertex next = queue.poll();
-        // if (next.equals(null))
-        // {
-        //     // no path is found, queue ran out
-        //     System.err.println("no path found, src is null");
-        //     return null;
-        // }
-        return recursiveSearch(pNew, next, goal, visited, queue, state);
+        return p.getParentPath();
     }
 
     private Vertex[] getAdjacent(Vertex v)
@@ -113,12 +91,23 @@ public class BFSMazeAgent
     @Override
     public boolean shouldReplacePlan(StateView state)
     {
-        // int xCoord = this.getNextVertexToMoveTo().getXCoordinate();
-        // int yCoord = this.getNextVertexToMoveTo().getYCoordinate();
-        // if (state.isUnitAt(xCoord, yCoord) || state.isResourceAt(xCoord, yCoord))
+        if (this.getNextVertexToMoveTo() == null)
+            return false;
+        int xCoord = this.getNextVertexToMoveTo().getXCoordinate();
+        int yCoord = this.getNextVertexToMoveTo().getYCoordinate();
+        // if (state.isUnitAt(xCoord, yCoord))
         // {
-        //     return true;
+        //     Integer unit = state.unitAt(xCoord, yCoord);
+        //     if (unit == null)
+        //         return false;
+        //     if(state.getUnit(unit).getTemplateView().getName().toLowerCase().equals("footman"))
+        //         System.out.println(state.getUnit(state.unitAt(xCoord, yCoord)).getTemplateView().getName().toLowerCase());
+        //         return true;
         // }
+        if (!state.inBounds(xCoord, yCoord))
+            return true;
+        if (state.isResourceAt(xCoord, yCoord))
+            return true;
 
         return false;
     }
