@@ -11,7 +11,6 @@ import edu.cwru.sepia.environment.model.state.State.StateView;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;   // will need for dfs
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;     // will need for dfs
 import java.util.Set;       // will need for dfs
@@ -29,9 +28,10 @@ public class DFSMazeAgent
         super(playerNum);
     }
 
+    // flipped goal and src names because i did it backwards by accident and didn't want to refactor everything
     @Override
-    public Path search(Vertex src,
-                       Vertex goal,
+    public Path search(Vertex goal,
+                       Vertex src,
                        StateView state)
     {
         Set<Vertex> visited = new HashSet<Vertex>();
@@ -47,13 +47,13 @@ public class DFSMazeAgent
             {
                 break;
             }
+            visited.add(current);
 
             for (Vertex neighbor : getAdjacent(current, goal, state)) {
                 if (visited.contains(neighbor))
                     continue;
 
                 previous.put(neighbor, current);
-                visited.add(neighbor);
                 stack.push(neighbor);
             }
         }
