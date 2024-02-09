@@ -99,7 +99,7 @@ public class InfilExfilAgent
         }
         else if (minDist >= 2)
         {
-            return 800f;
+            return 800;
         }
         else
         {
@@ -113,6 +113,11 @@ public class InfilExfilAgent
         // expensive?
         return (float)(Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2)));
         // return Math.abs(x1-x2) + Math.abs(y1 - y2);
+    }
+
+    private boolean isWithinDist(int x1, int y1, int x2, int y2, int dist)
+    {
+        return Math.abs(x1-x2) <= dist && Math.abs(y1-y2) <= dist;
     }
 
     @Override
