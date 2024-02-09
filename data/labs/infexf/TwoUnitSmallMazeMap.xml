@@ -30,6 +30,34 @@
             <progressAmount>0</progressAmount>
         </unit>
         <template xsi:type="UnitTemplate" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <ID>23</ID>
+            <foodCost>1</foodCost>
+            <goldCost>600</goldCost>
+            <woodCost>0</woodCost>
+            <timeCost>300</timeCost>
+            <name>Archer</name>
+            <baseHealth>200</baseHealth>
+            <baseAttack>100</baseAttack>
+            <piercingAttack>100</piercingAttack>
+            <range>2</range>
+            <armor>100</armor>
+            <sightRange>2</sightRange>
+            <canGather>true</canGather>
+            <canBuild>false</canBuild>
+            <canMove>true</canMove>
+            <canAcceptGold>false</canAcceptGold>
+            <canAcceptWood>false</canAcceptWood>
+            <foodProvided>0</foodProvided>
+            <character>97</character>
+            <goldGatherRate>100</goldGatherRate>
+            <woodGatherRate>100</woodGatherRate>
+            <durationGatherWood>1</durationGatherWood>
+            <durationGatherGold>1</durationGatherGold>
+            <durationMove>1</durationMove>
+            <durationAttack>1</durationAttack>
+            <durationDeposit>1</durationDeposit>
+        </template>
+        <template xsi:type="UnitTemplate" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <ID>5</ID>
             <foodCost>0</foodCost>
             <goldCost>1200</goldCost>
@@ -58,45 +86,8 @@
             <durationDeposit>1</durationDeposit>
             <produces>26</produces>
         </template>
-        <template xsi:type="UnitTemplate" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-            <ID>23</ID>
-            <foodCost>1</foodCost>
-            <goldCost>600</goldCost>
-            <woodCost>0</woodCost>
-            <timeCost>300</timeCost>
-            <name>Archer</name>
-            <baseHealth>200</baseHealth>
-            <baseAttack>100</baseAttack>
-            <piercingAttack>100</piercingAttack>
-            <range>2</range>
-            <armor>100</armor>
-            <sightRange>2</sightRange>
-            <canGather>true</canGather>
-            <canBuild>false</canBuild>
-            <canMove>true</canMove>
-            <canAcceptGold>false</canAcceptGold>
-            <canAcceptWood>false</canAcceptWood>
-            <foodProvided>0</foodProvided>
-            <character>97</character>
-            <goldGatherRate>100</goldGatherRate>
-            <woodGatherRate>100</woodGatherRate>
-            <durationGatherWood>1</durationGatherWood>
-            <durationGatherGold>1</durationGatherGold>
-            <durationMove>1</durationMove>
-            <durationAttack>1</durationAttack>
-            <durationDeposit>1</durationDeposit>
-        </template>
-        <resourceAmount>
-            <quantity>0</quantity>
-            <type>GOLD</type>
-        </resourceAmount>
-        <resourceAmount>
-            <quantity>0</quantity>
-            <type>WOOD</type>
-        </resourceAmount>
-        <supply>0</supply>
-        <supplyCap>0</supplyCap>
     </player>
+
     <player>
         <ID>1</ID>
         <unit>
@@ -136,17 +127,8 @@
             <durationAttack>1</durationAttack>
             <durationDeposit>1</durationDeposit>
         </template>
-        <resourceAmount>
-            <quantity>0</quantity>
-            <type>GOLD</type>
-        </resourceAmount>
-        <resourceAmount>
-            <quantity>0</quantity>
-            <type>WOOD</type>
-        </resourceAmount>
-        <supply>0</supply>
-        <supplyCap>0</supplyCap>
     </player>
+
     <resourceNode>
         <ID>580</ID>
         <type>GOLD_MINE</type>
@@ -155,6 +137,7 @@
         <initialAmount>0</initialAmount>
         <amountRemaining>500</amountRemaining>
     </resourceNode>
+
     <resourceNode>
         <ID>10</ID>
         <type>TREE</type>
@@ -187,6 +170,7 @@
         <initialAmount>0</initialAmount>
         <amountRemaining>400</amountRemaining>
     </resourceNode>
+    
     <resourceNode>
         <ID>14</ID>
         <type>TREE</type>
@@ -211,6 +195,7 @@
         <initialAmount>0</initialAmount>
         <amountRemaining>400</amountRemaining>
     </resourceNode>
+    
     <resourceNode>
         <ID>18</ID>
         <type>TREE</type>
