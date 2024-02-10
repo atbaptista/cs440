@@ -37,11 +37,11 @@ public class InfilExfilAgent
         // System.out.print("(" + src.getXCoordinate() + ", " + src.getYCoordinate() + "), ");
         // System.out.println("(" + dst.getXCoordinate() + ", " + dst.getYCoordinate() + ")");
         // get distance to nearest enemy unit and return weight inversely proportional to distance
-        int minDist = 1000;
-        int tempDist = 0;
+        float minDist = 1000;
+        float tempDist = 0;
 
-        // int eX = -1;
-        // int eY = -1;
+        int eX = -1;
+        int eY = -1;
         Set<Integer> enemies = this.getOtherEnemyUnitIDs();
         if (enemies == null) return 1;
         for (int id : enemies)
@@ -65,30 +65,30 @@ public class InfilExfilAgent
             if (tempDist < minDist)
             {
                 minDist = tempDist;
-                // eX = enemyX;
-                // eY = enemyY;
+                eX = enemyX;
+                eY = enemyY;
             }
         }
 
-        switch (minDist)
-        {
-            case 8:
-                return 2.5f;
-            case 7:
-                return 10;
-            case 6:
-                return 50;
-            case 5:
-                return 100;
-            case 4:
-                return 200;
-            case 3:
-                return 400;
-            case 2:
-                return 800;
-            default:
-                return 1;
-        }
+        // switch (minDist)
+        // {
+        //     case 8:
+        //         return 2.5f;
+        //     case 7:
+        //         return 10;
+        //     case 6:
+        //         return 50;
+        //     case 5:
+        //         return 100;
+        //     case 4:
+        //         return 200;
+        //     case 3:
+        //         return 400;
+        //     case 2:
+        //         return 800;
+        //     default:
+        //         return 1;
+        // }
 
         // if (debug)
         // {
@@ -96,56 +96,56 @@ public class InfilExfilAgent
         //     System.out.print("| coord: (" + Integer.toString(dst.getXCoordinate()) + "," + Integer.toString(dst.getYCoordinate())+ ") | ");
         //     System.out.print("enemy coord: (" + Integer.toString(eX) + "," + Integer.toString(eY)+ ")\n");
         // }
-        // if (minDist >= 6.25)
-        // {
-        //     return 1f;
-        // }
-        // else if (minDist >= 5.75)
-        // {
-        //     if (debug) System.out.println("1\n");
-        //     return 10f;
-        // }
-        // else if (minDist >= 5.25)
-        // {
-        //     if (debug) System.out.println("5\n");
-        //     return 20f;
-        // }
-        // else if (minDist >= 4.75)
-        // {
-        //     if (debug) System.out.println("10\n");
-        //     return 40;
-        // }
-        // else if (minDist >= 4.26)
-        // {
-        //     if (debug) System.out.println("25\n");
-        //     return 100;
-        // }
-        // else if (minDist >= 3.5)
-        // {
-        //     if (debug) System.out.println("50\n");
-        //     return 200;
-        // }
-        // else if (minDist >= 2.9)
-        // {
-        //     if (debug) System.out.println("100\n");
-        //     return 400;
-        // }
-        // else if (minDist >= 2)
-        // {
-        //     return 800;
-        // }
-        // else
-        // {
-        //     return 800;
-        // }
+        if (minDist >= 6.25)
+        {
+            return 1f;
+        }
+        else if (minDist >= 5.75)
+        {
+            if (debug) System.out.println("1\n");
+            return 10f;
+        }
+        else if (minDist >= 5.25)
+        {
+            if (debug) System.out.println("5\n");
+            return 20f;
+        }
+        else if (minDist >= 4.75)
+        {
+            if (debug) System.out.println("10\n");
+            return 40;
+        }
+        else if (minDist >= 4.26)
+        {
+            if (debug) System.out.println("25\n");
+            return 100;
+        }
+        else if (minDist >= 3.5)
+        {
+            if (debug) System.out.println("50\n");
+            return 200;
+        }
+        else if (minDist >= 2.9)
+        {
+            if (debug) System.out.println("100\n");
+            return 400;
+        }
+        else if (minDist >= 2)
+        {
+            return 800;
+        }
+        else
+        {
+            return 800;
+        }
     }
 
     // return manhattan distance? 
-    private int getDistance(int x1, int y1, int x2, int y2)
+    private float getDistance(int x1, int y1, int x2, int y2)
     {
         // expensive?
-        // return (float)(Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2)));
-        return Math.abs(x1-x2) + Math.abs(y1 - y2);
+        return (float)(Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2)));
+        // return Math.abs(x1-x2) + Math.abs(y1 - y2);
     }
 
     private boolean isWithinDist(int x1, int y1, int x2, int y2, int dist)
