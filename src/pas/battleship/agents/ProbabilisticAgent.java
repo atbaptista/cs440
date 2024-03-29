@@ -28,18 +28,18 @@ public class ProbabilisticAgent
     @Override
     public Coordinate makeMove(final GameView game)
     {
-        Coordinate result = new Coordinate(0, 0);
-        Outcome[][] board = game.getEnemyBoardView();
-        for (int i = 0; i < board.length; i++)
-        {
-            for (int j = 0; j < board[i].length; j++)
-            {
-                if (board[i][j] == Outcome.UNKNOWN)
-                {
-                    result = new Coordinate(i, j);
-                }
-            }
-        }
+        // Coordinate result = new Coordinate(0, 0);
+        // Outcome[][] board = game.getEnemyBoardView();
+        // for (int i = 0; i < board.length; i++)
+        // {
+        //     for (int j = 0; j < board[i].length; j++)
+        //     {
+        //         if (board[i][j] == Outcome.UNKNOWN)
+        //         {
+        //             result = new Coordinate(i, j);
+        //         }
+        //     }
+        // }
         return calculateProbs(game);
         // int xMax = game.getGameConstants().getNumCols();
         // int yMax = game.getGameConstants().getNumRows();
