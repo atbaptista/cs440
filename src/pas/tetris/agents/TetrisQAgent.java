@@ -1,6 +1,9 @@
 package src.pas.tetris.agents;
 
 // 0.2 (218.7045/300) + 0.4 (145/200) + 0.4 (110/150)
+// java -cp lib/*:. edu.bu.tetris.Main -q src.pas.tetris.agents.TetrisQAgent -p 5000 -t 100 -v 50 -n 0.01 -b 5000 -s | tee run.log
+// java -cp "./lib/*;." edu.bu.tetris.Main -q src.pas.tetris.agents.TetrisQAgent -p 5000 -t 100 -v 50 -n 0.01 -b 5000 -s
+
 // SYSTEM IMPORTS
 import java.util.Iterator;
 import java.util.List;
