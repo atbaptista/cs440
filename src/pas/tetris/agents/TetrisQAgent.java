@@ -55,8 +55,9 @@ public class TetrisQAgent
         // this example will create a 3-layer neural network (1 hidden layer)
         // in this example, the input to the neural network is the
         // image of the board unrolled into a giant vector
-        final int numPixelsInImage = Board.NUM_ROWS * Board.NUM_COLS;
-        final int inputSize = numPixelsInImage + 2;
+        // final int numPixelsInImage = Board.NUM_ROWS * Board.NUM_COLS;
+        // final int inputSize = numPixelsInImage + 2;
+        final int inputSize = 8;
         final int hiddenDim = 2 * inputSize;
         final int outDim = 1;
 
@@ -88,35 +89,165 @@ public class TetrisQAgent
                                     final Mino potentialAction)
     {
         // Attempt to get the grayscale image of the board with the potential mino action and flatten it
-        Matrix flattenedImage = null;
-        try {
-            flattenedImage = game.getGrayscaleImage(potentialAction).flatten();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(-1);
-        }
+        // Matrix flattenedImage = null;
+        // try {
+        //     flattenedImage = game.getGrayscaleImage(potentialAction).flatten();
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        //     System.exit(-1);
+        // }
 
-        double maxColumnHeight = calculateMaxHeight(game.getBoard());
-        double holes = calculateHoles(game.getBoard());
-        Matrix extendedFeatures = Matrix.zeros(1, flattenedImage.numel() + 2);
+        // double maxColumnHeight = calculateMaxHeight(game.getBoard());
+        // double holes = calculateHoles(game.getBoard());
+        // Matrix extendedFeatures = Matrix.zeros(1, flattenedImage.numel() + 2);
 
-        for (int i = 0; i < flattenedImage.numel(); i++) {
-            double value = 0;
-            try {
-                value = flattenedImage.get(0, i);  
-            } catch (IndexOutOfBoundsException e) {
-                e.printStackTrace();
-                System.exit(-1);
-            }
-            extendedFeatures.set(0, i, value);
-        }
+        // for (int i = 0; i < flattenedImage.numel(); i++) {
+        //     double value = 0;
+        //     try {
+        //         value = flattenedImage.get(0, i);  
+        //     } catch (IndexOutOfBoundsException e) {
+        //         e.printStackTrace();
+        //         System.exit(-1);
+        //     }
+        //     extendedFeatures.set(0, i, value);
+        // }
 
-        extendedFeatures.set(0, flattenedImage.numel(), maxColumnHeight);
-        extendedFeatures.set(0, flattenedImage.numel() + 1, holes);
+        // extendedFeatures.set(0, flattenedImage.numel(), maxColumnHeight);
+        // extendedFeatures.set(0, flattenedImage.numel() + 1, holes);
+
+        // return extendedFeatures;
+
+        // Calculate strategic features based on the board state
+        BoardFeatures features = calculateBoardFeatures(game.getBoard());
+
+        // There are eight strategic features: 
+        // cumulative height, total hole depth, rows with holes, row transitions, 
+        // column transitions, max well depth, max height, and total holes.
+        // We exclude well depths from this feature set.
+        int numFeatures = 8;
+        Matrix extendedFeatures = Matrix.zeros(1, numFeatures);
+
+        int idx = 0;
+        extendedFeatures.set(0, idx++, features.cumulativeHeight);
+        extendedFeatures.set(0, idx++, features.totalHoleDepth);
+        extendedFeatures.set(0, idx++, features.rowsWithHoles);
+        extendedFeatures.set(0, idx++, features.rowTransitions);
+        extendedFeatures.set(0, idx++, features.columnTransitions);
+        extendedFeatures.set(0, idx++, features.maxWellDepth);
+        extendedFeatures.set(0, idx++, features.maxHeight);
+        extendedFeatures.set(0, idx++, features.totalHoles);
 
         return extendedFeatures;
+
     }
 
+    private BoardFeatures calculateBoardFeatures(Board board) {
+        int numRows = Board.NUM_ROWS;
+        int numCols = Board.NUM_COLS;
+    
+        double cumulativeHeight = 0;
+        double totalHoleDepth = 0;
+        int rowsWithHoles = 0;
+        int rowTransitions = 0;
+        int columnTransitions = 0;
+        double maxWellDepth = 0;
+        double maxHeight = 0; 
+        int totalHoles = 0;   
+    
+        double[] columnHeights = new double[numCols];
+        double[] wellDepths = new double[numCols];
+        boolean[] rowHasHole = new boolean[numRows];
+    
+        // Initialize column heights and well depths
+        Arrays.fill(columnHeights, numRows); // Assume initially all columns are full
+        Arrays.fill(wellDepths, 0);
+    
+        for (int row = 0; row < numRows; row++) {
+            boolean previousCellOccupied = board.isCoordinateOccupied(0, row);
+            for (int col = 0; col < numCols; col++) {
+                boolean currentCellOccupied = board.isCoordinateOccupied(col, row);
+                
+                // Calculate column heights and max height
+                if (currentCellOccupied && columnHeights[col] == numRows) {
+                    columnHeights[col] = row; // Set height to the first occupied cell from top
+                    int currentHeight = numRows - row;
+                    maxHeight = Math.max(maxHeight, currentHeight); // Update max height
+                }
+    
+                // Check row transitions
+                if (col > 0 && currentCellOccupied != previousCellOccupied) {
+                    rowTransitions++;
+                }
+                previousCellOccupied = currentCellOccupied;
+    
+                // Check column transitions
+                if (row > 0 && currentCellOccupied != board.isCoordinateOccupied(col, row - 1)) {
+                    columnTransitions++;
+                }
+    
+                // Check for holes and hole depth
+                if (!currentCellOccupied && col < numCols && row < numRows - 1 && board.isCoordinateOccupied(col, row + 1)) {
+                    totalHoleDepth += 1; // Increment depth for each hole
+                    rowHasHole[row] = true;
+                    totalHoles++; // Counting holes
+                }
+            }
+            // Update row transition count for row end
+            if (board.isCoordinateOccupied(numCols - 1, row) != board.isCoordinateOccupied(numCols - 1, 0)) {
+                rowTransitions++;
+            }
+        }
+    
+        // Calculate well depths and cumulative heights
+        for (int col = 0; col < numCols; col++) {
+            double wellDepth = 0;
+            boolean foundWell = false;
+            for (int row = (int)columnHeights[col] + 1; row < numRows && !board.isCoordinateOccupied(col, row); row++) {
+                wellDepth++;
+                foundWell = true;
+            }
+            if (foundWell) {
+                wellDepths[col] = wellDepth;
+                maxWellDepth = Math.max(maxWellDepth, wellDepth);
+            }
+            cumulativeHeight += numRows - columnHeights[col];
+        }
+    
+        // Count rows with holes
+        for (boolean hasHole : rowHasHole) {
+            if (hasHole) rowsWithHoles++;
+        }
+    
+        // Return an object encapsulating all the calculated features
+        return new BoardFeatures(cumulativeHeight, wellDepths, totalHoleDepth, rowsWithHoles, rowTransitions,
+                                 columnTransitions, maxWellDepth, maxHeight, totalHoles);
+    }
+    
+    private static class BoardFeatures {
+        double cumulativeHeight;
+        double[] wellDepths;
+        double totalHoleDepth;
+        int rowsWithHoles;
+        int rowTransitions;
+        int columnTransitions;
+        double maxWellDepth;
+        double maxHeight;
+        int totalHoles;
+    
+        public BoardFeatures(double cumulativeHeight, double[] wellDepths, double totalHoleDepth, int rowsWithHoles,
+                             int rowTransitions, int columnTransitions, double maxWellDepth, double maxHeight, int totalHoles) {
+            this.cumulativeHeight = cumulativeHeight;
+            this.wellDepths = wellDepths;
+            this.totalHoleDepth = totalHoleDepth;
+            this.rowsWithHoles = rowsWithHoles;
+            this.rowTransitions = rowTransitions;
+            this.columnTransitions = columnTransitions;
+            this.maxWellDepth = maxWellDepth;
+            this.maxHeight = maxHeight;
+            this.totalHoles = totalHoles;
+        }
+    }
+    
     private double calculateMaxHeight(Board board) {
         int maxHeight = 0;
         for (int col = 0; col < Board.NUM_COLS; col++) {
@@ -250,12 +381,18 @@ public class TetrisQAgent
     @Override
     public double getReward(GameView game) {
         double reward = 0.0;
-        if (game.getTotalScore() != 0){
+        if (game.getTotalScore() >= 10){
+            reward += 100;
             System.out.println(game.getTotalScore());
         }
-        // Reward based on score achieved this turn - consider smoothing this
-        reward += game.getScoreThisTurn() * 10;  // Scaling the score to make it more significant
-    
+        // // Reward based on score achieved this turn - consider smoothing this
+        // reward += game.getScoreThisTurn() * 100;  // Scaling the score to make it more significant
+        // Reward exponentially based on the score achieved this turn
+        // reward += Math.exp((double) game.getScoreThisTurn() / 10.0) * 10;
+
+        // // Additional bonus for increasing the total score
+        // reward += Math.exp((double) game.getTotalScore() / 10.0) * 10;
+        //reward += game.getTotalScore() / 100.0;  // Normalize total score to manage scale
         // Penalize for high stack heights - encourage lower heights
         double maxHeight = calculateMaxHeight(game.getBoard());
         if (maxHeight > Board.NUM_ROWS / 2) {
