@@ -1,8 +1,11 @@
 package src.pas.tetris.agents;
 
+import java.util.Arrays;
+
 // 0.2 (218.7045/300) + 0.4 (145/200) + 0.4 (110/150)
 // java -cp lib/*:. edu.bu.tetris.Main -q src.pas.tetris.agents.TetrisQAgent -p 5000 -t 100 -v 50 -n 0.01 -b 5000 -s | tee run.log
-// java -cp "./lib/*;." edu.bu.tetris.Main -q src.pas.tetris.agents.TetrisQAgent -p 5000 -t 100 -v 50 -n 0.01 -b 5000 -s
+// java -cp "./lib/*;." edu.bu.tetris.Main -q src.pas.tetris.agents.TetrisQAgent -p 5000 -t 100 -v 50 -n 0.01 -b 10000 -s -c 1000000000 -o params/newReward
+// javac -cp "./lib/*;." @tetris.srcs
 
 // SYSTEM IMPORTS
 import java.util.Iterator;
@@ -93,18 +96,14 @@ public class TetrisQAgent
             System.exit(-1);
         }
 
-        // Calculate additional features
         double maxColumnHeight = calculateMaxHeight(game.getBoard());
         double holes = calculateHoles(game.getBoard());
-
-        // Creating an extended feature vector using Matrix.zeros
         Matrix extendedFeatures = Matrix.zeros(1, flattenedImage.numel() + 2);
 
-        // Copy the flattened board image data into the extended feature vector
         for (int i = 0; i < flattenedImage.numel(); i++) {
             double value = 0;
             try {
-                value = flattenedImage.get(0, i);  // Assuming flatten results in a single-row matrix
+                value = flattenedImage.get(0, i);  
             } catch (IndexOutOfBoundsException e) {
                 e.printStackTrace();
                 System.exit(-1);
@@ -112,7 +111,6 @@ public class TetrisQAgent
             extendedFeatures.set(0, i, value);
         }
 
-        // Append additional features
         extendedFeatures.set(0, flattenedImage.numel(), maxColumnHeight);
         extendedFeatures.set(0, flattenedImage.numel() + 1, holes);
 
@@ -124,9 +122,9 @@ public class TetrisQAgent
         for (int col = 0; col < Board.NUM_COLS; col++) {
             for (int row = 0; row < Board.NUM_ROWS; row++) {
                 if (board.isCoordinateOccupied(col, row)) {
-                    int currentHeight = Board.NUM_ROWS - row; // Height is counted from the bottom of the board
+                    int currentHeight = Board.NUM_ROWS - row; 
                     maxHeight = Math.max(maxHeight, currentHeight);
-                    break; // Once the first block is found, move to the next column
+                    break; 
                 }
             }
         }
@@ -139,9 +137,8 @@ public class TetrisQAgent
             boolean blockFound = false;
             for (int row = 0; row < Board.NUM_ROWS; row++) {
                 if (board.isCoordinateOccupied(col, row)) {
-                    blockFound = true; // Mark when the first block is found
+                    blockFound = true; 
                 } else if (blockFound) {
-                    // If a block is found and the current cell is empty, it's a hole
                     totalHoles++;
                 }
             }
@@ -251,31 +248,32 @@ public class TetrisQAgent
      * signal that is less sparse, you should see your model optimize this reward over time.
      */
     @Override
-    public double getReward(final GameView game)
-    {
-        double reward = 0;
-
-        // Reward based on score achieved this turn
-        reward += game.getScoreThisTurn();
-
-        // Penalize if the agent has reached a losing state
+    public double getReward(GameView game) {
+        double reward = 0.0;
+        if (game.getTotalScore() != 0){
+            System.out.println(game.getTotalScore());
+        }
+        // Reward based on score achieved this turn - consider smoothing this
+        reward += game.getScoreThisTurn() * 10;  // Scaling the score to make it more significant
+    
+        // Penalize for high stack heights - encourage lower heights
+        double maxHeight = calculateMaxHeight(game.getBoard());
+        if (maxHeight > Board.NUM_ROWS / 2) {
+            reward -= (maxHeight - Board.NUM_ROWS / 2) * 20;  // Increasing penalty for heights above half the board
+        }
+    
+        // Reward for keeping the board lower than certain thresholds
+        reward += (Board.NUM_ROWS - maxHeight) * 5;  // Reward for each row below the max height
+    
+        // Penalize for holes
+        double holes = calculateHoles(game.getBoard());
+        reward -= holes * 30;  // Strong penalty for each hole
+    
+        // Check if the game is lost
         if (game.didAgentLose()) {
             reward -= 1000;  // Large penalty for losing
         }
-
-        // Additional game state evaluations
-        Board board = game.getBoard();
-        double holes = calculateHoles(board); // Assume calculateHoles is defined to count the "holes" in the board
-        double maxHeight = calculateMaxHeight(board); // Assume calculateMaxHeight measures the max stack height
-
-        // Penalize based on number of holes
-        reward -= holes * 10;
-
-        // Penalize based on height of the board to discourage stacking blocks too high
-        reward -= maxHeight * 2;
-
+    
         return reward;
-
     }
-
 }
