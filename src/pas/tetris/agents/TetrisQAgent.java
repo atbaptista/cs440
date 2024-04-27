@@ -40,6 +40,7 @@ public class TetrisQAgent
 
     long prevPhaseId = 0;
     long prevGameId = 0;
+    int phase = 0;
     int rounds = 0;
     public static final double EXPLORATION_PROB = 0.05;
 
@@ -61,7 +62,7 @@ public class TetrisQAgent
         // this example will create a 3-layer neural network (1 hidden layer)
         // in this example, the input to the neural network is the
         // image of the board unrolled into a giant vector
-        final int inputFeatures = 14;
+        final int inputFeatures = 4;
         final int hiddenDim = inputFeatures * 2;
         final int outDim = 1;
 
@@ -92,15 +93,15 @@ public class TetrisQAgent
     public Matrix getQFunctionInput(final GameView game,
                                     final Mino potentialAction)
     {
-        Matrix features = Matrix.zeros(1, 14);
-        for (int col = 0; col < Board.NUM_COLS; col++) {
-            for (int row = 0; row < Board.NUM_ROWS; row++) {
-                if (game.getBoard().isCoordinateOccupied(col, row)) {
-                    features.set(0, col, Board.NUM_ROWS-row);
-                    break;
-                }
-            }
-        }
+        Matrix features = Matrix.zeros(1, 4);
+        // for (int col = 0; col < Board.NUM_COLS; col++) {
+        //     for (int row = 0; row < Board.NUM_ROWS; row++) {
+        //         if (game.getBoard().isCoordinateOccupied(col, row)) {
+        //             features.set(0, col, Board.NUM_ROWS-row);
+        //             break;
+        //         }
+        //     }
+        // }
 
         Matrix greyScale = null;
         try
@@ -111,10 +112,10 @@ public class TetrisQAgent
             e.printStackTrace();
             System.exit(-1);
         }
-        features.set(0, 10, calculateLinesCleared(greyScale));
-        features.set(0, 11, calculateHoles(greyScale));
-        features.set(0, 12, calculateBumpiness(greyScale));
-        features.set(0, 13, calculateTotalHeight(greyScale));
+        features.set(0, 0, calculateLinesCleared(greyScale));
+        features.set(0, 1, calculateHoles(greyScale));
+        features.set(0, 2, calculateBumpiness(greyScale));
+        features.set(0, 3, calculateTotalHeight(greyScale));
         // System.out.println(features.toString() + "\n\n\n");
         return features;
     }
@@ -215,6 +216,7 @@ public class TetrisQAgent
         // new phase
         if (prevPhaseId != gameCounter.getCurrentPhaseIdx()) {
             prevPhaseId = gameCounter.getCurrentPhaseIdx();
+            phase += 1;
             // System.out.println("PERCENT: " + epsilon);
         }
         return this.random.nextDouble() < epsilon;
@@ -315,38 +317,41 @@ public class TetrisQAgent
         // double currentAverageHeight = calculateAverageHeight(game.getBoard());
         
         // max height
-        reward -= (maxHeight / 5);
+        // reward -= (maxHeight / 5);
 
         // holes
-        if (holes <= 5) {
-            reward += 1;
-        }
-        else if (holes <= 10) {
-            reward += 0.5;
-        }
-        else {
-            reward -= 2;
-        }
+        // if (holes <= 5) {
+        //     reward += 1;
+        // }
+        // else if (holes <= 10) {
+        //     reward += 0.5;
+        // }
+        // else {
+        //     reward -= 2;
+        // }
 
         // score
         reward += (Math.pow(game.getScoreThisTurn(), 2)/5);  
-
+        reward = (-0.510066) * calculateAggregateHeight(game.getBoard()) + (0.760666) * game.getScoreThisTurn() + (-0.35663) * holes * (-0.184483) * calculateBumpiness(game.getBoard());
+        if (phase > 1000) {
+            reward += (Math.pow(game.getScoreThisTurn(), 2)/5); 
+        }
         // rounds exponential points
         rounds += 1;
         //reward += rounds/10;
         //reward += Math.exp(0.2 * (rounds - 15));
-        if (rounds < 15) {
-            reward -= 0.5;
-        }
-        else if (rounds < 20) {
-            reward += 0.5;
-        }
-        else if (rounds <25) {
-            reward += 1.0;
-        }
-        else {
-            reward += (rounds / 20);
-        }
+        // if (rounds < 15) {
+        //     reward -= 0.5;
+        // }
+        // else if (rounds < 20) {
+        //     reward += 0.5;
+        // }
+        // else if (rounds <25) {
+        //     reward += 1.0;
+        // }
+        // else {
+        //     reward += (rounds / 20);
+        // }
         // System.out.println(rounds);
         // if (game.didAgentLose()) {
         //     rounds = 0;
@@ -501,6 +506,36 @@ public class TetrisQAgent
         }
     
         return totalEmptySpaces;
+    }
+        // Method to calculate the aggregate height of the board
+        public static int calculateAggregateHeight(Board board) {
+            int totalHeight = 0;
+            for (int col = 0; col < Board.NUM_COLS; col++) {
+                totalHeight += getColumnHeight(board, col);
+            }
+            return totalHeight;
+        }
+    
+        // Helper method to get the height of a column
+        private static int getColumnHeight(Board board, int col) {
+            for (int row = 0; row < Board.NUM_ROWS; row++) {
+                if (board.isCoordinateOccupied(col, row)) {
+                    return Board.NUM_ROWS - row;  // Height is total rows minus the current row index
+                }
+            }
+            return 0;  // Return 0 if the column is empty
+        }
+
+    // Method to calculate the bumpiness of the board
+    public static int calculateBumpiness(Board board) {
+        int bumpiness = 0;
+        int previousHeight = getColumnHeight(board, 0);
+        for (int col = 1; col < Board.NUM_COLS; col++) {
+            int currentHeight = getColumnHeight(board, col);
+            bumpiness += Math.abs(currentHeight - previousHeight);
+            previousHeight = currentHeight;
+        }
+        return bumpiness;
     }
 
 }
