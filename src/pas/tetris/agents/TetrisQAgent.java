@@ -60,8 +60,8 @@ public class TetrisQAgent
         int boardSize = 0;
         boardSize += (Board.NUM_COLS * Board.NUM_ROWS);
         final int inputSize = boardSize + 8;  
-        final int hiddenDim1 = inputSize / 2; 
-        final int hiddenDim2 = inputSize / 4;  
+        final int hiddenDim1 = inputSize ; 
+        final int hiddenDim2 = inputSize / 2;  
         final int outDim = 1;       
 
         Sequential qFunction = new Sequential();
