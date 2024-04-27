@@ -58,10 +58,10 @@ public class TetrisQAgent
     {
         rounds = 0;
         int boardSize = 0;
-        boardSize += (Board.NUM_COLS * Board.NUM_ROWS);
-        final int inputSize = boardSize + 8;  
-        final int hiddenDim1 = inputSize ; 
-        final int hiddenDim2 = inputSize / 2;  
+        // boardSize += (Board.NUM_COLS * Board.NUM_ROWS);
+        final int inputSize = boardSize + 10;  
+        final int hiddenDim1 = inputSize * 2; 
+        final int hiddenDim2 = inputSize;  
         final int outDim = 1;       
 
         Sequential qFunction = new Sequential();
@@ -105,44 +105,56 @@ public class TetrisQAgent
         if (game.didAgentLose()) {
             rounds = 0;
         }
-        Matrix flattenedImage = null;
-        try
-        {
-            flattenedImage = game.getGrayscaleImage(potentialAction).flatten();
-        } catch(Exception e)
-        {
-            e.printStackTrace();
-            System.exit(-1);
-        }
-        int numFeatures = 8;
-        Matrix extendedFeatures = Matrix.zeros(1, (Board.NUM_COLS * Board.NUM_ROWS) + numFeatures);
-        for (int i = 0; i < flattenedImage.numel(); i++) {
-            double value = 0;
-            try {
-                value = flattenedImage.get(0, i);  
-            } catch (IndexOutOfBoundsException e) {
-                e.printStackTrace();
-                System.exit(-1);
-            }
-            extendedFeatures.set(0, i, value);
-        }
-        // next 3 minos
-        extendedFeatures.set(0, flattenedImage.numel(), game.getNextThreeMinoTypes().get(0).hashCode());
-        extendedFeatures.set(0, flattenedImage.numel()+1, game.getNextThreeMinoTypes().get(1).hashCode());
-        extendedFeatures.set(0, flattenedImage.numel()+2, game.getNextThreeMinoTypes().get(2).hashCode());
-        // type and rotation
-        extendedFeatures.set(0, flattenedImage.numel()+3, potentialAction.getType().hashCode());
-        extendedFeatures.set(0, flattenedImage.numel()+4, potentialAction.getOrientation().hashCode());
+        // Matrix flattenedImage = null;
+        // try
+        // {
+        //     flattenedImage = game.getGrayscaleImage(potentialAction).flatten();
+        // } catch(Exception e)
+        // {
+        //     e.printStackTrace();
+        //     System.exit(-1);
+        // }
+        // int numFeatures = 8;
+        // Matrix extendedFeatures = Matrix.zeros(1, (Board.NUM_COLS * Board.NUM_ROWS) + numFeatures);
+        // for (int i = 0; i < flattenedImage.numel(); i++) {
+        //     double value = 0;
+        //     try {
+        //         value = flattenedImage.get(0, i);  
+        //     } catch (IndexOutOfBoundsException e) {
+        //         e.printStackTrace();
+        //         System.exit(-1);
+        //     }
+        //     extendedFeatures.set(0, i, value);
+        // }
+        // // next 3 minos
+        // extendedFeatures.set(0, flattenedImage.numel(), game.getNextThreeMinoTypes().get(0).hashCode());
+        // extendedFeatures.set(0, flattenedImage.numel()+1, game.getNextThreeMinoTypes().get(1).hashCode());
+        // extendedFeatures.set(0, flattenedImage.numel()+2, game.getNextThreeMinoTypes().get(2).hashCode());
+        // // type and rotation
+        // extendedFeatures.set(0, flattenedImage.numel()+3, potentialAction.getType().hashCode());
+        // extendedFeatures.set(0, flattenedImage.numel()+4, potentialAction.getOrientation().hashCode());
 
-        // holes
-        extendedFeatures.set(0, flattenedImage.numel()+5, calculateHoles(game.getBoard()));
-        // max height
-        extendedFeatures.set(0, flattenedImage.numel()+6, calculateMaxHeight(game.getBoard()));
-        // round
-        extendedFeatures.set(0, flattenedImage.numel()+7, rounds);
-        // avg height
-        // extendedFeatures.set(0, flattenedImage.numel()+7, calculateAverageHeight(game.getBoard()));
-        return extendedFeatures;
+        // // holes
+        // extendedFeatures.set(0, flattenedImage.numel()+5, calculateHoles(game.getBoard()));
+        // // max height
+        // extendedFeatures.set(0, flattenedImage.numel()+6, calculateMaxHeight(game.getBoard()));
+        // // round
+        // extendedFeatures.set(0, flattenedImage.numel()+7, rounds);
+        // // avg height
+        // // extendedFeatures.set(0, flattenedImage.numel()+7, calculateAverageHeight(game.getBoard()));
+        
+        Matrix features = Matrix.zeros(1, 10);
+        for (int col = 0; col < Board.NUM_COLS; col++) {
+            for (int row = 0; row < Board.NUM_ROWS; row++) {
+                if (game.getBoard().isCoordinateOccupied(col, row)) {
+                    features.set(0, col, Board.NUM_ROWS-row);
+                    break;
+                }
+            }
+        }
+        // System.out.println(features.toString() + "\n\n\n");
+        
+        return features;
     }
 
     private BoardFeatures calculateBoardFeatures(final Board boardIn, final Mino potentialAction) {
@@ -571,7 +583,12 @@ public class TetrisQAgent
         // reward -= currentAverageHeight;
         // reward -= holes;
         // reward += game.getScoreThisTurn()*5;
-        
+        try {
+            TimeUnit.SECONDS.sleep(5);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         if (false) {
             System.out.println("SCORE x 10: " + game.getScoreThisTurn() * 10);
             System.out.println("CURRENT HOLES: " + holes);
