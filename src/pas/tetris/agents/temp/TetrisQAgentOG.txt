@@ -1,9 +1,11 @@
 package src.pas.tetris.agents;
 
+import java.util.Arrays;
+
 // 0.2 (218.7045/300) + 0.4 (145/200) + 0.4 (110/150)
 // java -cp lib/*:. edu.bu.tetris.Main -q src.pas.tetris.agents.TetrisQAgent -p 5000 -t 100 -v 50 -n 0.01 -b 5000 -s | tee run.log
 // java -cp "./lib/*;." edu.bu.tetris.Main -q src.pas.tetris.agents.TetrisQAgent -p 5000 -t 100 -v 50 -n 0.01 -b 10000 -s -o params/newReward | tee run.log
-// java -cp "./lib/*;." edu.bu.tetris.Main -q src.pas.tetris.agents.TetrisQAgent -p 5000 -t 100 -v 50 -n 0.01 -b 5000 -s -o param/10feat/ | tee run10.log
+// java -cp "./lib/*;." edu.bu.tetris.Main -q src.pas.tetris.agents.TetrisQAgent -p 5000 -t 100 -v 50 -n 0.01 -b 5000 -s | tee run.log
 // LONG
 // java -cp "./lib/*;." edu.bu.tetris.Main -q src.pas.tetris.agents.TetrisQAgent -p 5000 -t 250 -v 50 -n 0.0001 -g 0.99 -u 25 -b 50000 -c 1000000000 -s | tee runDim.log
 // javac -cp "./lib/*;." @tetris.srcs
@@ -38,9 +40,6 @@ public class TetrisQAgent
     extends QAgent
 {
 
-    long prevPhaseId = 0;
-    long prevGameId = 0;
-    int rounds = 0;
     public static final double EXPLORATION_PROB = 0.05;
 
     private Random random;
@@ -53,22 +52,33 @@ public class TetrisQAgent
 
     public Random getRandom() { return this.random; }
 
+    int rounds = 0;
     @Override
     public Model initQFunction()
     {
         rounds = 0;
-        // build a single-hidden-layer feedforward network
-        // this example will create a 3-layer neural network (1 hidden layer)
-        // in this example, the input to the neural network is the
-        // image of the board unrolled into a giant vector
-        final int inputFeatures = 14;
-        final int hiddenDim = inputFeatures * 2;
-        final int outDim = 1;
+        int boardSize = 0;
+        boardSize += (Board.NUM_COLS * Board.NUM_ROWS);
+        final int inputSize = boardSize + 8;  
+        final int hiddenDim1 = 10 * 2; 
+        final int hiddenDim2 = 10;  
+        final int outDim = 1;       
 
         Sequential qFunction = new Sequential();
-        qFunction.add(new Dense(inputFeatures, hiddenDim));
+
+        // qFunction.add(new Dense(inputSize, hiddenDim1));
+        // qFunction.add(new ReLU());
+
+        // qFunction.add(new Dense(hiddenDim1, hiddenDim2));
+        // qFunction.add(new ReLU());
+
+        // qFunction.add(new Dense(hiddenDim2, outDim));
+
+        qFunction.add(new Dense(inputSize, hiddenDim1));
         qFunction.add(new Tanh());
-        qFunction.add(new Dense(hiddenDim, outDim));
+        qFunction.add(new Dense(hiddenDim1, hiddenDim2));
+        qFunction.add(new Tanh());
+        qFunction.add(new Dense(hiddenDim2, outDim));
 
         return qFunction;
     }
@@ -92,96 +102,214 @@ public class TetrisQAgent
     public Matrix getQFunctionInput(final GameView game,
                                     final Mino potentialAction)
     {
-        Matrix features = Matrix.zeros(1, 14);
-        for (int col = 0; col < Board.NUM_COLS; col++) {
-            for (int row = 0; row < Board.NUM_ROWS; row++) {
-                if (game.getBoard().isCoordinateOccupied(col, row)) {
-                    features.set(0, col, Board.NUM_ROWS-row);
-                    break;
-                }
-            }
+        if (game.didAgentLose()) {
+            rounds = 0;
         }
-
-        Matrix greyScale = null;
+        Matrix flattenedImage = null;
         try
         {
-            greyScale = game.getGrayscaleImage(potentialAction);
+            flattenedImage = game.getGrayscaleImage(potentialAction).flatten();
         } catch(Exception e)
         {
             e.printStackTrace();
             System.exit(-1);
         }
-        features.set(0, 10, calculateLinesCleared(greyScale));
-        features.set(0, 11, calculateHoles(greyScale));
-        features.set(0, 12, calculateBumpiness(greyScale));
-        features.set(0, 13, calculateTotalHeight(greyScale));
+        int numFeatures = 8;
+        Matrix extendedFeatures = Matrix.zeros(1, (Board.NUM_COLS * Board.NUM_ROWS) + numFeatures);
+        for (int i = 0; i < flattenedImage.numel(); i++) {
+            double value = 0;
+            try {
+                value = flattenedImage.get(0, i);  
+            } catch (IndexOutOfBoundsException e) {
+                e.printStackTrace();
+                System.exit(-1);
+            }
+            extendedFeatures.set(0, i, value);
+        }
+        // next 3 minos
+        extendedFeatures.set(0, flattenedImage.numel(), game.getNextThreeMinoTypes().get(0).hashCode());
+        extendedFeatures.set(0, flattenedImage.numel()+1, game.getNextThreeMinoTypes().get(1).hashCode());
+        extendedFeatures.set(0, flattenedImage.numel()+2, game.getNextThreeMinoTypes().get(2).hashCode());
+        // type and rotation
+        extendedFeatures.set(0, flattenedImage.numel()+3, potentialAction.getType().hashCode());
+        extendedFeatures.set(0, flattenedImage.numel()+4, potentialAction.getOrientation().hashCode());
+
+        // holes
+        extendedFeatures.set(0, flattenedImage.numel()+5, calculateHoles(game.getBoard()));
+        // max height
+        extendedFeatures.set(0, flattenedImage.numel()+6, calculateMaxHeight(game.getBoard()));
+        // round
+        extendedFeatures.set(0, flattenedImage.numel()+7, rounds);
+        // avg height
+        // extendedFeatures.set(0, flattenedImage.numel()+7, calculateAverageHeight(game.getBoard()));
+        
+        // Matrix features = Matrix.zeros(1, 10);
+        // for (int col = 0; col < Board.NUM_COLS; col++) {
+        //     for (int row = 0; row < Board.NUM_ROWS; row++) {
+        //         if (game.getBoard().isCoordinateOccupied(col, row)) {
+        //             features.set(0, col, Board.NUM_ROWS-row);
+        //             break;
+        //         }
+        //     }
+        // }
         // System.out.println(features.toString() + "\n\n\n");
-        return features;
+        
+        return extendedFeatures;
     }
 
-    // Calculate the number of lines cleared
-    public static int calculateLinesCleared(Matrix board) {
-        int linesCleared = 0;
-        for (int row = 0; row < board.getShape().getNumRows(); row++) {
-            boolean isFull = true;
-            for (int col = 0; col < board.getShape().getNumCols(); col++) {
-                if (board.get(row, col) == 0.0) {
-                    isFull = false;
-                    break;
+    private BoardFeatures calculateBoardFeatures(final Board boardIn, final Mino potentialAction) {
+        Board board = new Board(boardIn);
+        board.addMino(potentialAction);
+        int numRows = Board.NUM_ROWS;
+        int numCols = Board.NUM_COLS;
+    
+        double cumulativeHeight = 0;
+        double totalHoleDepth = 0;
+        int rowsWithHoles = 0;
+        int rowTransitions = 0;
+        int columnTransitions = 0;
+        double maxWellDepth = 0;
+        double maxHeight = 0; 
+        int totalHoles = 0;   
+        int minoType = potentialAction.getType().hashCode();
+        int minoRotation = potentialAction.getOrientation().hashCode();
+    
+        double[] columnHeights = new double[numCols];
+        double[] wellDepths = new double[numCols];
+        boolean[] rowHasHole = new boolean[numRows];
+    
+        Arrays.fill(columnHeights, numRows);
+        Arrays.fill(wellDepths, 0);
+    
+        for (int row = 0; row < numRows; row++) {
+            boolean previousCellOccupied = board.isCoordinateOccupied(0, row);
+            for (int col = 0; col < numCols; col++) {
+                boolean currentCellOccupied = board.isCoordinateOccupied(col, row);
+                
+                // col heights and max height
+                if (currentCellOccupied && columnHeights[col] == numRows) {
+                    columnHeights[col] = row; 
+                    int currentHeight = numRows - row;
+                    maxHeight = Math.max(maxHeight, currentHeight); 
+                }
+    
+                if (col > 0 && currentCellOccupied != previousCellOccupied) {
+                    rowTransitions++;
+                }
+                previousCellOccupied = currentCellOccupied;
+    
+                if (row > 0 && currentCellOccupied != board.isCoordinateOccupied(col, row - 1)) {
+                    columnTransitions++;
+                }
+    
+                // holes
+                if (!currentCellOccupied && col < numCols && row < numRows - 1 && board.isCoordinateOccupied(col, row + 1)) {
+                    totalHoleDepth += 1; 
+                    rowHasHole[row] = true;
+                    totalHoles++; 
                 }
             }
-            if (isFull) linesCleared++;
+            if (board.isCoordinateOccupied(numCols - 1, row) != board.isCoordinateOccupied(numCols - 1, 0)) {
+                rowTransitions++;
+            }
         }
-        return linesCleared;
+    
+        for (int col = 0; col < numCols; col++) {
+            double wellDepth = 0;
+            boolean foundWell = false;
+            for (int row = (int)columnHeights[col] + 1; row < numRows && !board.isCoordinateOccupied(col, row); row++) {
+                wellDepth++;
+                foundWell = true;
+            }
+            if (foundWell) {
+                wellDepths[col] = wellDepth;
+                maxWellDepth = Math.max(maxWellDepth, wellDepth);
+            }
+            cumulativeHeight += numRows - columnHeights[col];
+        }
+    
+        for (boolean hasHole : rowHasHole) {
+            if (hasHole) rowsWithHoles++;
+        }
+    
+        return new BoardFeatures(cumulativeHeight, totalHoleDepth, rowsWithHoles, rowTransitions,
+                                 columnTransitions, maxWellDepth, maxHeight, totalHoles, minoType, minoRotation);
+    }
+    
+    private static class BoardFeatures {
+        double cumulativeHeight;
+        double totalHoleDepth;
+        int rowsWithHoles;
+        int rowTransitions;
+        int columnTransitions;
+        double maxWellDepth;
+        double maxHeight;
+        int totalHoles;
+        int minoType;
+        int minoRotation;
+    
+        public BoardFeatures(double cumulativeHeight, double totalHoleDepth, int rowsWithHoles,
+                             int rowTransitions, int columnTransitions, double maxWellDepth, double maxHeight, int totalHoles, int minoType, int minoRotation) {
+            this.cumulativeHeight = cumulativeHeight;
+            this.totalHoleDepth = totalHoleDepth;
+            this.rowsWithHoles = rowsWithHoles;
+            this.rowTransitions = rowTransitions;
+            this.columnTransitions = columnTransitions;
+            this.maxWellDepth = maxWellDepth;
+            this.maxHeight = maxHeight;
+            this.totalHoles = totalHoles;
+            this.minoType = minoType;
+            this.minoRotation = minoRotation;
+        }
+    }
+    
+    private double calculateMaxHeight(Board board) {
+        int maxHeight = 0;
+        for (int col = 0; col < Board.NUM_COLS; col++) {
+            for (int row = 0; row < Board.NUM_ROWS; row++) {
+                if (board.isCoordinateOccupied(col, row)) {
+                    int currentHeight = Board.NUM_ROWS - row; 
+                    maxHeight = Math.max(maxHeight, currentHeight);
+                    break; 
+                }
+            }
+        }
+        return maxHeight;
     }
 
-    // Calculates the number of holes in the board
-    public static int calculateHoles(Matrix board) {
-        int holes = 0;
-        for (int col = 0; col < board.getShape().getNumCols(); col++) {
+    // private double calculateMaxWidth(Board board) {
+    //     int maxWidth = 0;
+    //     for (int col = 0; col < Board.NUM_COLS; col++) {
+    //         for (int row = 0; row < Board.NUM_ROWS; row++) {
+    //             if (board.isCoordinateOccupied(col, row)) {
+    //                 int currentHeight = Board.NUM_ROWS - row; 
+    //                 maxHeight = Math.max(maxHeight, currentHeight);
+    //                 break; 
+    //             }
+    //         }
+    //     }
+    //     return maxHeight;
+    // }
+    
+    private double calculateHoles(Board board) {
+        int totalHoles = 0;
+        for (int col = 0; col < Board.NUM_COLS; col++) {
             boolean blockFound = false;
-            for (int row = 0; row < board.getShape().getNumRows(); row++) {
-                double cell = board.get(row, col);
-                if (cell == 0.5 || cell == 1.0) {
+            int holesInColumn = 0;
+            for (int row = 0; row < Board.NUM_ROWS; row++) {
+                if (board.isCoordinateOccupied(col, row)) {
                     blockFound = true;
-                } else if (blockFound && cell == 0.0) {
-                    holes++;
+                } else if (blockFound) {
+                    holesInColumn++;
                 }
             }
+            totalHoles += holesInColumn;
         }
-        return holes;
+        return totalHoles;
     }
-    // Calculates the bumpiness of the board
-    public static int calculateBumpiness(Matrix board) {
-        int bumpiness = 0;
-        int previousHeight = getColumnHeight(board, 0);
-        for (int col = 1; col < board.getShape().getNumCols(); col++) {
-            int currentHeight = getColumnHeight(board, col);
-            bumpiness += Math.abs(currentHeight - previousHeight);
-            previousHeight = currentHeight;
-        }
-        return bumpiness;
-    }
-
-    // Calculates the total height of the columns on the board
-    public static int calculateTotalHeight(Matrix board) {
-        int totalHeight = 0;
-        for (int col = 0; col < board.getShape().getNumCols(); col++) {
-            totalHeight += getColumnHeight(board, col);
-        }
-        return totalHeight;
-    }
-
-    // Helper to get the height of a column
-    private static int getColumnHeight(Matrix board, int col) {
-        for (int row = 0; row < board.getShape().getNumRows(); row++) {
-            if (board.get(row, col) != 0.0) {
-                return board.getShape().getNumRows() - row;
-            }
-        }
-        return 0;
-    }
-
+    
+    long prevPhaseId = 0;
+    long prevGameId = 0;
     /**
      * This method is used to decide if we should follow our current policy
      * (i.e. our q-function), or if we should ignore it and take a random action
@@ -229,6 +357,7 @@ public class TetrisQAgent
      * option, which in practice doesn't work as well as a more guided strategy.
      * I would recommend devising your own strategy here.
      */
+    
     @Override
     public Mino getExplorationMove(final GameView game)
     {
@@ -280,6 +409,50 @@ public class TetrisQAgent
                 }
             }
         }
+    }
+   
+    public double calculateAverageHeight(Board board) {
+        int totalHeight = 0;
+        int numColumns = Board.NUM_COLS; 
+
+        for (int col = 0; col < numColumns; col++) {
+            int columnHeight = 0;
+            for (int row = 0; row < Board.NUM_ROWS; row++) {
+                if (board.isCoordinateOccupied(col, row)) {
+                    columnHeight = Board.NUM_ROWS - row; 
+                    break; 
+                }
+            }
+            totalHeight += columnHeight;
+        }
+
+        double averageHeight = (double) totalHeight / numColumns;
+        return averageHeight;
+    }
+    
+    public int emptySpacesBelowMaxHeight(Board board) {
+        int totalEmptySpaces = 0;
+        int numColumns = Board.NUM_COLS;
+        double maxHeight = calculateMaxHeight(board);
+    
+        // Iterate over each column
+        for (int col = 0; col < numColumns; col++) {
+            int columnHeight = 0;
+            for (int row = 0; row < Board.NUM_ROWS; row++) {
+                if (board.isCoordinateOccupied(col, row)) {
+                    columnHeight = Board.NUM_ROWS - row;
+                    break;
+                }
+            }
+
+            for (int row = Board.NUM_ROWS - columnHeight; row < Board.NUM_ROWS - maxHeight; row++) {
+                if (!board.isCoordinateOccupied(col, row)) {
+                    totalEmptySpaces++;
+                }
+            }
+        }
+    
+        return totalEmptySpaces;
     }
 
     /**
@@ -410,6 +583,12 @@ public class TetrisQAgent
         // reward -= currentAverageHeight;
         // reward -= holes;
         // reward += game.getScoreThisTurn()*5;
+        try {
+            TimeUnit.SECONDS.sleep(5);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         if (false) {
             System.out.println("SCORE x 10: " + game.getScoreThisTurn() * 10);
             System.out.println("CURRENT HOLES: " + holes);
@@ -432,75 +611,30 @@ public class TetrisQAgent
         }
         return reward;
     }
-
-    private double calculateMaxHeight(Board board) {
-        int maxHeight = 0;
-        for (int col = 0; col < Board.NUM_COLS; col++) {
-            for (int row = 0; row < Board.NUM_ROWS; row++) {
-                if (board.isCoordinateOccupied(col, row)) {
-                    int currentHeight = Board.NUM_ROWS - row; 
-                    maxHeight = Math.max(maxHeight, currentHeight);
-                    break; 
-                }
-            }
-        }
-        return maxHeight;
-    }
-
-    // private double calculateMaxWidth(Board board) {
-    //     int maxWidth = 0;
-    //     for (int col = 0; col < Board.NUM_COLS; col++) {
-    //         for (int row = 0; row < Board.NUM_ROWS; row++) {
-    //             if (board.isCoordinateOccupied(col, row)) {
-    //                 int currentHeight = Board.NUM_ROWS - row; 
-    //                 maxWidth = Math.max(maxWidth, currentHeight);
-    //                 break; 
-    //             }
-    //         }
+    
+    
+    // @Override
+    // public double getReward(GameView game) {
+    //     double reward = 0.0;
+    //     if (game.getTotalScore() >= 8){
+    //         reward += 100;
+    //         System.out.println(game.getTotalScore());
     //     }
-    //     return maxHeight;
+    //     reward += Math.pow((double) game.getScoreThisTurn(), (double) game.getScoreThisTurn());
+    //     // penalty for high stack heights - encourage lower heights
+    //     double maxHeight = calculateMaxHeight(game.getBoard());
+    //     if (maxHeight > Board.NUM_ROWS / 2) {
+    //         // penalty for heights above half the board
+    //         reward -= (maxHeight - Board.NUM_ROWS / 2) * 20;  
+    //     }
+    
+    //     // keep the board lower than certain thresholds
+    //     reward += (Board.NUM_ROWS - maxHeight) * 5;  
+    
+    //     if (game.didAgentLose()) {
+    //         reward -= 1000;  
+    //     }
+    
+    //     return reward;
     // }
-
-    private double calculateHoles(Board board) {
-        int totalHoles = 0;
-        for (int col = 0; col < Board.NUM_COLS; col++) {
-            boolean blockFound = false;
-            int holesInColumn = 0;
-            for (int row = 0; row < Board.NUM_ROWS; row++) {
-                if (board.isCoordinateOccupied(col, row)) {
-                    blockFound = true;
-                } else if (blockFound) {
-                    holesInColumn++;
-                }
-            }
-            totalHoles += holesInColumn;
-        }
-        return totalHoles;
-    }
-
-    public int emptySpacesBelowMaxHeight(Board board) {
-        int totalEmptySpaces = 0;
-        int numColumns = Board.NUM_COLS;
-        double maxHeight = calculateMaxHeight(board);
-    
-        // Iterate over each column
-        for (int col = 0; col < numColumns; col++) {
-            int columnHeight = 0;
-            for (int row = 0; row < Board.NUM_ROWS; row++) {
-                if (board.isCoordinateOccupied(col, row)) {
-                    columnHeight = Board.NUM_ROWS - row;
-                    break;
-                }
-            }
-
-            for (int row = Board.NUM_ROWS - columnHeight; row < Board.NUM_ROWS - maxHeight; row++) {
-                if (!board.isCoordinateOccupied(col, row)) {
-                    totalEmptySpaces++;
-                }
-            }
-        }
-    
-        return totalEmptySpaces;
-    }
-
 }

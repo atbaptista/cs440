@@ -1,0 +1,25 @@
+[INFO] TrainerAgent.initialize: creating replay buffer of size [10000]
+[INFO] TrainerAgent.onGameEnd: After 1 phase(s), avg trajectory utility = 26.947570837109343
+PERCENT: 0.24995
+[INFO] TrainerAgent.onGameEnd: After 2 phase(s), avg trajectory utility = 28.75588096072081
+PERCENT: 0.2499
+[INFO] TrainerAgent.onGameEnd: After 3 phase(s), avg trajectory utility = 27.60412852963805
+PERCENT: 0.24985
+[INFO] TrainerAgent.onGameEnd: After 4 phase(s), avg trajectory utility = 26.848417579852047
+PERCENT: 0.2498
+[INFO] TrainerAgent.onGameEnd: After 5 phase(s), avg trajectory utility = 30.286168605120697
+PERCENT: 0.24975
+[INFO] TrainerAgent.onGameEnd: After 6 phase(s), avg trajectory utility = 27.033346916220662
+PERCENT: 0.2497
+[INFO] TrainerAgent.onGameEnd: After 7 phase(s), avg trajectory utility = 27.996342902815805
+PERCENT: 0.24965
+[INFO] TrainerAgent.onGameEnd: After 8 phase(s), avg trajectory utility = 27.742680425643922
+PERCENT: 0.2496
+[INFO] TrainerAgent.onGameEnd: After 9 phase(s), avg trajectory utility = 25.791698431432245
+PERCENT: 0.24955
+[INFO] TrainerAgent.onGameEnd: After 10 phase(s), avg trajectory utility = 27.581543331457922
+PERCENT: 0.2495
+[INFO] TrainerAgent.onGameEnd: After 11 phase(s), avg trajectory utility = 30.388396646485095
+PERCENT: 0.24945
+[INFO] TrainerAgent.onGameEnd: After 12 phase(s), avg trajectory utility = 27.342529145228873
+PERCENT: 0.2494

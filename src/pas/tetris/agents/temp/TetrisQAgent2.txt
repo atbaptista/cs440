@@ -34,7 +34,7 @@ import edu.bu.tetris.training.data.Dataset;
 import edu.bu.tetris.utils.Pair;
 
 
-public class TetrisQAgent
+public class TetrisQAgent2
     extends QAgent
 {
 
@@ -42,7 +42,7 @@ public class TetrisQAgent
 
     private Random random;
 
-    public TetrisQAgent(String name)
+    public TetrisQAgent2(String name)
     {
         super(name);
         this.random = new Random(12345); // optional to have a seed
