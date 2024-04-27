@@ -9,6 +9,15 @@ package src.pas.tetris.agents;
 // javac -cp "./lib/*;." @tetris.srcs
 // java -cp "./lib/*;." edu.bu.tetris.Main -a src.pas.tetris.agents.TetrisQAgent -i ./params/trash/36.model
 
+// run10.log - params/qFunction700.model
+// 14 features, reward is just points, slow 
+
+// run4s.log - param/800.model
+// 4 features, reward is that function, slow
+
+// run.log - /param/10feat/4868.model
+// 4 features, reward is that function, quick
+
 // SYSTEM IMPORTS
 import java.util.Iterator;
 import java.util.List;
@@ -43,6 +52,7 @@ public class TetrisQAgent
     int phase = 0;
     int rounds = 0;
     public static final double EXPLORATION_PROB = 0.05;
+    boolean four = true;
 
     private Random random;
 
@@ -62,7 +72,13 @@ public class TetrisQAgent
         // this example will create a 3-layer neural network (1 hidden layer)
         // in this example, the input to the neural network is the
         // image of the board unrolled into a giant vector
-        final int inputFeatures = 4;
+        int inputFeatures;
+        if (four) {
+            inputFeatures = 4;
+        }
+        else {
+            inputFeatures = 14;
+        }
         final int hiddenDim = inputFeatures * 2;
         final int outDim = 1;
 
@@ -93,16 +109,25 @@ public class TetrisQAgent
     public Matrix getQFunctionInput(final GameView game,
                                     final Mino potentialAction)
     {
-        Matrix features = Matrix.zeros(1, 4);
-        // for (int col = 0; col < Board.NUM_COLS; col++) {
-        //     for (int row = 0; row < Board.NUM_ROWS; row++) {
-        //         if (game.getBoard().isCoordinateOccupied(col, row)) {
-        //             features.set(0, col, Board.NUM_ROWS-row);
-        //             break;
-        //         }
-        //     }
-        // }
-
+        int inputFeatures;
+        if (four) {
+            inputFeatures = 4;
+        }
+        else {
+            inputFeatures = 14;
+        }
+        Matrix features = Matrix.zeros(1, inputFeatures);
+        if (!four){
+            for (int col = 0; col < Board.NUM_COLS; col++) {
+                for (int row = 0; row < Board.NUM_ROWS; row++) {
+                    if (game.getBoard().isCoordinateOccupied(col, row)) {
+                        features.set(0, col, Board.NUM_ROWS-row);
+                        break;
+                    }
+                }
+            }
+        }
+        
         Matrix greyScale = null;
         try
         {
@@ -112,10 +137,20 @@ public class TetrisQAgent
             e.printStackTrace();
             System.exit(-1);
         }
-        features.set(0, 0, calculateLinesCleared(greyScale));
-        features.set(0, 1, calculateHoles(greyScale));
-        features.set(0, 2, calculateBumpiness(greyScale));
-        features.set(0, 3, calculateTotalHeight(greyScale));
+
+        if (four){
+            features.set(0, 0, calculateLinesCleared(greyScale));
+            features.set(0, 1, calculateHoles(greyScale));
+            features.set(0, 2, calculateBumpiness(greyScale));
+            features.set(0, 3, calculateTotalHeight(greyScale));
+        }
+        else {
+            features.set(0, 10, calculateLinesCleared(greyScale));
+            features.set(0, 11, calculateHoles(greyScale));
+            features.set(0, 12, calculateBumpiness(greyScale));
+            features.set(0, 13, calculateTotalHeight(greyScale));
+        }
+        
         // System.out.println(features.toString() + "\n\n\n");
         return features;
     }
@@ -333,9 +368,9 @@ public class TetrisQAgent
         // score
         reward += (Math.pow(game.getScoreThisTurn(), 2)/5);  
         reward = (-0.510066) * calculateAggregateHeight(game.getBoard()) + (0.760666) * game.getScoreThisTurn() + (-0.35663) * holes * (-0.184483) * calculateBumpiness(game.getBoard());
-        if (phase > 1000) {
-            reward += (Math.pow(game.getScoreThisTurn(), 2)/5); 
-        }
+        // if (phase > 1000) {
+        //     reward += (Math.pow(game.getScoreThisTurn(), 2)/5); 
+        // }
         // rounds exponential points
         rounds += 1;
         //reward += rounds/10;
