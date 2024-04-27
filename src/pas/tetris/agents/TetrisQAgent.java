@@ -6,7 +6,8 @@ import java.util.Arrays;
 // java -cp lib/*:. edu.bu.tetris.Main -q src.pas.tetris.agents.TetrisQAgent -p 5000 -t 100 -v 50 -n 0.01 -b 5000 -s | tee run.log
 // java -cp "./lib/*;." edu.bu.tetris.Main -q src.pas.tetris.agents.TetrisQAgent -p 5000 -t 100 -v 50 -n 0.01 -b 10000 -s -o params/newReward | tee run.log
 // java -cp "./lib/*;." edu.bu.tetris.Main -q src.pas.tetris.agents.TetrisQAgent -p 5000 -t 100 -v 50 -n 0.01 -b 5000 -s | tee run.log
-// -p 5000 -t 250 -v 50 -n 0.0001 -g 0.99 -u 25 -b 50000 -c 1000000000 -s
+// LONG
+// java -cp "./lib/*;." edu.bu.tetris.Main -q src.pas.tetris.agents.TetrisQAgent -p 5000 -t 250 -v 50 -n 0.0001 -g 0.99 -u 25 -b 50000 -c 1000000000 -s | tee runDim.log
 // javac -cp "./lib/*;." @tetris.srcs
 // java -cp "./lib/*;." edu.bu.tetris.Main -a src.pas.tetris.agents.TetrisQAgent -i ./params/trash/36.model
 
@@ -330,7 +331,7 @@ public class TetrisQAgent
         // new phase
         if (prevPhaseId != gameCounter.getCurrentPhaseIdx()) {
             prevPhaseId = gameCounter.getCurrentPhaseIdx();
-            System.out.println("PERCENT: " + epsilon);
+            // System.out.println("PERCENT: " + epsilon);
         }
         return this.random.nextDouble() < epsilon;
     }
