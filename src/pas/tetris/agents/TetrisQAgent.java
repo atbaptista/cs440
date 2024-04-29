@@ -52,7 +52,7 @@ public class TetrisQAgent
     int phase = 0;
     int rounds = 0;
     public static final double EXPLORATION_PROB = 0.05;
-    boolean four = true;
+    boolean four = false;
 
     private Random random;
 
@@ -319,6 +319,7 @@ public class TetrisQAgent
         }
     }
 
+    double lastRoundMaxHeight = 0;
     /**
      * This method is where you will devise your own reward signal. Remember, the larger
      * the number, the more "pleasurable" it is to the model, and the smaller the number,
@@ -338,118 +339,73 @@ public class TetrisQAgent
     @Override
     public double getReward(GameView game) {
         double reward = 0.0;
-        // if (game.getTotalScore() >= 8){
-        //     System.out.println(game.getTotalScore());
-        // }
-
-        // reward
-        // reward += game.getScoreThisTurn() * 10;
-
-        // punish
         double holes = calculateHoles(game.getBoard());
         double maxHeight = calculateMaxHeight(game.getBoard());
         double emptyBelowMax = emptySpacesBelowMaxHeight(game.getBoard());
-        // double currentAverageHeight = calculateAverageHeight(game.getBoard());
-        
-        // max height
-        // reward -= (maxHeight / 5);
+        double bumps = calculateBumpiness(game.getBoard());
 
-        // holes
-        // if (holes <= 5) {
-        //     reward += 1;
-        // }
-        // else if (holes <= 10) {
-        //     reward += 0.5;
-        // }
-        // else {
-        //     reward -= 2;
-        // }
-
-        // score
-        reward += (Math.pow(game.getScoreThisTurn(), 2)/5);  
-        reward = (-0.510066) * calculateAggregateHeight(game.getBoard()) + (0.760666) * game.getScoreThisTurn() + (-0.35663) * holes * (-0.184483) * calculateBumpiness(game.getBoard());
-        // if (phase > 1000) {
-        //     reward += (Math.pow(game.getScoreThisTurn(), 2)/5); 
-        // }
-        // rounds exponential points
         rounds += 1;
-        //reward += rounds/10;
-        //reward += Math.exp(0.2 * (rounds - 15));
-        // if (rounds < 15) {
-        //     reward -= 0.5;
-        // }
-        // else if (rounds < 20) {
-        //     reward += 0.5;
-        // }
-        // else if (rounds <25) {
-        //     reward += 1.0;
-        // }
-        // else {
-        //     reward += (rounds / 20);
-        // }
-        // System.out.println(rounds);
-        // if (game.didAgentLose()) {
-        //     rounds = 0;
-        // }
+        if (rounds == 1){
+            lastRoundMaxHeight = 0;
+        }
+        double linesRemoved = lastRoundMaxHeight - maxHeight;
+        if (linesRemoved < 0) {
+            linesRemoved = 0;
+        }
 
-        // // empty below max
-        // if (emptyBelowMax <= 6) {
-        //     reward += 2.0;
+        // reward for staying low and less holes
+        // if (maxHeight <= Board.NUM_ROWS){
+        //     reward += 2;
+            
         // }
-        // else if (emptyBelowMax <= 12) {
+        // else { // punish for high and not dense
         //     reward -= 1;
         // }
-        // else if (emptyBelowMax <= 20){
-        //     reward -= 2.0;
-        // }
-        // else{
-        //     reward -= 4;
-        // }
-
-        // // max height
-        // if (maxHeight <= 6) {
-        //     // low and few holes
-        //     if (holes < 5){
-        //         reward += 2;
-        //     }
-        //     else{
-        //         reward += 0.7;
-        //     }
-        // }
-        // else if (maxHeight <= 12){
-        //     if (holes > 7){
-        //         reward -= 0.3;
-        //     }
-        //     else {
-        //         reward += 1;
-        //     }
-        // }
-        // else {
-        //     if (holes > 10) {
-        //         reward -= 2;
-        //     }
-        //     else {
-        //         reward -= 0.5;
-        //     }
-        // }
-
-        // // holes
         // if (holes <= 5) {
-        //     reward += 1;
-        // }
-        // else if (holes <= 10) {
-        //     reward += 0;
-        // }
-        // else if (holes <= 20){
-        //     reward -= 2;
+        //     reward += 2;
         // }
         // else {
+        //     reward -= (holes/20);
+        // }
+        // if (bumps < 5) {
+        //     reward += 2;
+        // }
+        // else {
+        //     reward -= bumps/5;
+        // }
+        // reward for staying low and less holes
+
+        // if (maxHeight <= Board.NUM_ROWS){
+        //     reward += 2;
+            
+        // }
+        // else { // punish for high and not dense
         //     reward -= 3;
         // }
-        
-        // reward -= currentAverageHeight;
-        // reward -= holes;
-        // reward += game.getScoreThisTurn()*5;
+        // if (holes <= 5) {
+        //     reward += 2;
+        // }
+        // else {
+        //     reward -= (holes/20);
+        // }
+        // if (bumps < 5) {
+        //     reward += 2;
+        // }
+        // else {
+        //     reward -= bumps/2;
+        // }
+        // if (linesRemoved > 1){
+        //     reward += Math.pow(linesRemoved, 2);
+        // }
+        // reward += Math.pow(game.getScoreThisTurn()*2, 2);
+
+        reward -= holes;
+        if (maxHeight <= 5) {
+            reward += calculateAggregateHeight(game.getBoard())/5;
+        }
+        reward += Math.pow(game.getScoreThisTurn()*2, 2);
+        reward += Math.pow(linesRemoved, 2);
+
         if (false) {
             System.out.println("SCORE x 10: " + game.getScoreThisTurn() * 10);
             System.out.println("CURRENT HOLES: " + holes);
